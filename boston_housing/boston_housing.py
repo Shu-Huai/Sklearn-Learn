@@ -3,7 +3,7 @@ import pandas as pd
 from numpy import ndarray
 from pandas import DataFrame, Series
 from sklearn.linear_model import LinearRegression
-from sklearn.metrics import r2_score
+from sklearn.metrics import r2_score, mean_absolute_error
 from sklearn.model_selection import train_test_split
 from sklearnex import patch_sklearn
 
@@ -65,23 +65,35 @@ def run(save: bool = True) -> None:
     fit(model, x_train, y_train)
     print_parameter(model, x_train)
     result = predict(model, x_test)
+    print_mae(y_test.values, result)
     print("模型分数：" + str(score(y_test.values, result)))
     show_accuracy(y_test.values, result, save)
     save_model(model, save)
 
 
+def get_mae(y_test: ndarray, y_pred: ndarray) -> float:
+    return mean_absolute_error(y_test, y_pred)
+
+
+def print_mae(y_test: ndarray, y_pred: ndarray) -> None:
+    print("mae：" + str(get_mae(y_test, y_pred)))
+
+
 def run(times: int = 1, save: bool = True) -> None:
     max_score = 0
+    mae_list: list = []
     for i in range(times):
         x_train, x_test, y_train, y_test = load_data()
         if i == 0:
             print("训练集x：" + str(x_train.shape))
             print("训练集y：" + str(y_train.shape))
-        print("-------------第" + str(i) + "次-------------")
         model: LinearRegression = build_model()
+        print("-------------第" + str(i) + "次-------------")
         fit(model, x_train, y_train)
         print_parameter(model, x_train)
         result = predict(model, x_test)
+        print_mae(y_test.values, result)
+        mae_list.append(get_mae(y_test.values, result))
         model_score = score(y_test.values, result)
         print("模型分数：" + str(score(y_test.values, result)))
         if model_score > max_score:
@@ -89,6 +101,9 @@ def run(times: int = 1, save: bool = True) -> None:
             show_accuracy(y_test.values, result, save)
             save_model(model, save)
     print("模型分数：" + str(max_score))
+    plot(save, os.path.join(os.path.dirname(__file__), plot_path, 'mae.png') if save else None,
+         mae=mae_list)
+
 
 if __name__ == "__main__":
     plt.rcParams['figure.dpi'] = plot_dpi
